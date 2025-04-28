@@ -34,14 +34,14 @@ def preprocess_movie_dataset(movie_df:pd.DataFrame) -> pd.DataFrame:
     -------
         pd.DataFrame: Preprocessed and cleaned dataset
     """
-    ############################# Subset creation ##############################
+    ############################# Subset creation #################################
     # Select movie data between 2003 and 2023
     start_date = "1983-01-01"
     end_date = "2023-12-31"
 
     # Convert production date early to ensure consistent datetime handling
     movie_df['production_date'] = pd.to_datetime(movie_df['production_date'])
-    # Filter out invalid dates first
+    # Filter out invalid dates 
     movie_df = movie_df.dropna(subset=['production_date'])
     # Sort and filter by date range
     filtered_df = movie_df[
@@ -50,14 +50,15 @@ def preprocess_movie_dataset(movie_df:pd.DataFrame) -> pd.DataFrame:
     ].sort_values(by='production_date')
 
     ######################## Feature selection and renaming #########################
-    # Confirmed with the Internet that production_date here refers to initial release date
-    selected_features = ['movie_title','production_date','genres', 'movie_averageRating', 'Production budget $', 'Domestic gross $', 'Worldwide gross $']
+    # Production_date here refers to initial release date
+    selected_features = ['movie_title','production_date','genres', 'movie_averageRating', 
+                         'Production budget $', 'Domestic gross $', 'Worldwide gross $']
     filtered_df = filtered_df[selected_features]
     filtered_df.columns = ['movie_title', 'release_date', 'genre', 'avg_rating',
        'prod_budget', 'domestic_gross', 'global_gross']
     # print(filtered_df.head(10))
 
-    ############################ Data Cleaning ##############################
+    #################################### Data Cleaning ##############################
     # Remove rows with any duplicates or missing values
     df_cleaned = filtered_df.drop_duplicates()
     df_cleaned = df_cleaned.dropna()
@@ -67,19 +68,15 @@ def preprocess_movie_dataset(movie_df:pd.DataFrame) -> pd.DataFrame:
         (df_cleaned['prod_budget'] > 0) & (df_cleaned['domestic_gross'] > 0)
     ]
 
-    ##################### Feature transformation & creation ##################
+    ######################### Feature transformation & creation #####################
     # Simplify genre by keeping only the first genre
     df_cleaned['genre'] = df_cleaned['genre'].str.split(',').str[0].str.lower().str.strip()
 
     # Convert release_date to datetime and extract month
     df_cleaned['release_month'] = df_cleaned['release_date'].dt.strftime('%b')
-    # df_cleaned['release_month'] = df_cleaned['release_date'].dt.month
-    # print(f"df_cleaned['release_month'] is {df_cleaned['release_month']}")
-
 
     # Create ROI feature
     df_cleaned['ROI'] = (df_cleaned['global_gross'] - df_cleaned['prod_budget'])/df_cleaned['prod_budget']
-    # print(df_cleaned[['movie_title', 'ROI', 'prod_budget', 'domestic_gross']])
 
     # Convert the 'global_gross' column to millions
     df_cleaned['global_gross_millions'] = df_cleaned['global_gross'] / 1_000_000
@@ -96,7 +93,7 @@ def preprocess_movie_dataset(movie_df:pd.DataFrame) -> pd.DataFrame:
     # Validate categorization
     categorical_cols = ['budget_category', 'rating_category', 'roi_category']
     original_cols = ['prod_budget', 'avg_rating', 'ROI']
-    # _validate_categorization(df_cleaned, categorical_cols, original_cols)
+    _validate_categorization(df_cleaned, categorical_cols, original_cols)
 
     # Basic validation
     # print(f"Rows after cleaning: {len(df_cleaned)}")
@@ -108,12 +105,13 @@ def preprocess_movie_dataset(movie_df:pd.DataFrame) -> pd.DataFrame:
     df_cleaned.to_csv('processed_movie_data.csv')
     return df_cleaned
 
-def _categorize_features(df: pd.DataFrame, budget_col:str='prod_budget_millions', rating_col:str='avg_rating', roi_col:str='ROI', n_categories:int=3):
+def _categorize_features(df: pd.DataFrame, budget_col:str='prod_budget_millions', 
+                         rating_col:str='avg_rating', roi_col:str='ROI', n_categories:int=3):
     """
     Helper function to categorize continous variables in the provided DataFrame and 
     add the category features to the DataFrame. 
     """
-    # Categorize budget
+    # Categorize budget (divide data into equal-sized bins/quantiles)
     df['budget_category'] = pd.qcut(
         df[budget_col], 
         q=n_categories, 
@@ -159,6 +157,8 @@ def _validate_categorization(df:pd.DataFrame, categorical_cols: List[str], origi
         print(f"\n{col} Significance Test:")
         print(f"H-statistic: {h_statistic}")
         print(f"p-value: {p_value}")
+
+        
 
 def plot_global_monthly_revenues(df: pd.DataFrame):
     """
@@ -664,97 +664,13 @@ df_preprocessed = preprocess_movie_dataset(movie_df)
 # chi_square_test_for_release_month_roi(df_preprocessed)
 # mine_association_rules(df_preprocessed)
 # plot_month_roi_heatmap(df_preprocessed)
-predictor = MulticlassMoviePerformancePredictor(df_preprocessed)
-model = predictor.train_logistic_regression_model(0.1)
-predictor.evaluate_model()
-predictor.month_performance_analysis()
+
+# predictor = MulticlassMoviePerformancePredictor(df_preprocessed)
+# model = predictor.train_logistic_regression_model(0.1)
+# predictor.evaluate_model()
+# predictor.month_performance_analysis()
+
 # predictor.month_coefficient_analysis()
 
 # predictor.calculate_month_statistical_metrics()
-
-
-
-
-
-
-
-
-
-
-
-
-# def feature_importance(model):
-#     """
-#     Analyze feature importance for multinomial classification
-    
-#     Returns:
-#     --------
-#     feature_importance : dict of pandas.Series
-#     """
-#     # Get feature names after preprocessing
-#     feature_names = (
-#         model.named_steps['preprocessor']
-#         .named_transformers_['num'].get_feature_names_out(
-#             ['prod_budget', 'avg_rating']
-#         ).tolist() + 
-#         model.named_steps['preprocessor']
-#         .named_transformers_['cat'].get_feature_names_out(
-#             ['release_month', 'genre']
-#         ).tolist()
-#     )
-    
-#     # Get coefficients for each class
-#     coefficients = model.named_steps['classifier'].coef_
-#     class_names = model.named_steps['classifier'].classes_
-    
-#     # Create feature importance for each class
-#     feature_importance = {}
-#     for i, cls in enumerate(class_names):
-#         importance = pd.Series(
-#             coefficients[i], 
-#             index=feature_names
-#         ).abs().sort_values(ascending=False)
-#         feature_importance[cls] = importance
-    
-#     # Visualize feature importance for each class
-#     plt.figure(figsize=(15,10))
-#     for i, (cls, importance) in enumerate(feature_importance.items(), 1):
-#         plt.subplot(1, 3, i)
-#         importance.plot(kind='bar')
-#         plt.title(f'Feature Importance for {cls}')
-#         plt.xlabel('Features')
-#         plt.ylabel('Absolute Coefficient Value')
-#         plt.xticks(rotation=45, ha='right')
-#         plt.tight_layout()
-    
-#     plt.show()
-    
-#     return feature_importance
-
-# Get the feature names manually
-# onehot_encoder = model.named_steps['preprocessor'].named_transformers_['cat']
-# print(onehot_encoder.categories_)
-
-# coeff_df = pd.DataFrame(coefficients, columns=feature_names)
-
-    # # Extract coefficients related to 'release_month'
-    # month_coeffs = coeff_df.filter(like='release_month')
-    # month_coeffs = month_coeffs.T  # Transpose for readability
-    # month_coeffs.columns = ['High ROI', 'Low ROI', 'Moderate ROI']  # Update if needed
-    # print(month_coeffs)
-
-#    # Filter for release_month-related features
-#     month_features = [name for name in feature_names if 'release_month' in name]
-#     print("Encoded release_month features:", month_features)
-
-
-# # Remove outliers in numeric columns (optional)
-# def remove_outliers(series: pd.Series) -> pd.Series:
-#     Q1 = series.quantile(0.25)
-#     Q3 = series.quantile(0.75)
-#     IQR = Q3 - Q1
-#     lower_bound = Q1 - 1.5 * IQR
-#     upper_bound = Q3 + 1.5 * IQR
-#     # Replace outliers with NaN
-#     return series.where((series >= lower_bound) & (series <= upper_bound))
 
