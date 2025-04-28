@@ -8,6 +8,9 @@ Investigates the relationship between a movie's release timing and its box offic
 ## Dataset
 - Sourced from Kaggle 
 - Movies from 2003-2023, 2750 records
+## Data Preprocessing
+I used the Python data analysis library `pandas` for data cleaning, data selection, feature selection, and data transformation.
+The Python library `scipy` (`scipy.stats.kruskal`) is also used to validate the meaningfulness of the categorization I have done to the data. 
 ## Exporatory Data Analysis 
 ![image](https://github.com/user-attachments/assets/b3e2c94e-aad7-4e04-b540-f628d42b8c8f)
 
