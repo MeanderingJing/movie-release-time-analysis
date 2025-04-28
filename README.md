@@ -9,7 +9,7 @@ Investigates the relationship between a movie's release timing and its box offic
 - Sourced from Kaggle 
 - Movies from 2003-2023, 2750 records
 ## Exporatory Data Analysis 
-![image](https://github.com/user-attachments/assets/0748bf2d-f6af-44a1-bbc3-318f01f33d29)
+![image](https://github.com/user-attachments/assets/b3e2c94e-aad7-4e04-b540-f628d42b8c8f)
 
 ![image](https://github.com/user-attachments/assets/f764564d-43d8-41a4-8017-c91edf39aac3)
 ## Statistical Analysis (Chi-square Test of Independence)
